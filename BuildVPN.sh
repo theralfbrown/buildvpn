@@ -6,11 +6,6 @@
 # [Description]: Script to automate the buildout of OpenVPN servers and clients.
 #
 ########################################################################################
-#
-# [Fix Contributors]:
-#                     Christopher Truncer.| [Twitter].: @ChrisTruncer
-#
-########################################################################################
 
 # Global Variables
 openvpn_dir='/etc/openvpn'
@@ -26,7 +21,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.3.2 | By: Michael Wright | Updated: 05.09.2013'
+  echo ' BuildVPN 1.3.3 | By: Michael Wright | Updated: 05.09.2013'
   echo '=============================================================================='
   echo
 }
