@@ -6,6 +6,11 @@
 # [Description]: Script to automate the buildout of OpenVPN servers and clients.
 #
 ########################################################################################
+#
+# [Fix Contributors]:
+#                     Christopher Truncer.| [Twitter].: @ChrisTruncer
+#
+########################################################################################
 
 # Global Variables
 openvpn_dir='/etc/openvpn'
@@ -21,7 +26,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.3.1 | By: Michael Wright | Updated: 01.28.2013'
+  echo ' BuildVPN 1.3.2 | By: Michael Wright | Updated: 05.09.2013'
   echo '=============================================================================='
   echo
 }
@@ -62,6 +67,7 @@ func_build_server(){
   read -p 'Enter Preferred DNS Server (ex: 208.67.222.222).: ' dns
   read -p 'Enter Max Clients Threshold.....................: ' maxconn
   read -p 'Route All Traffic Through This VPN (y/n)........: ' routeall
+  read -p 'Allow Certificates With Same Subject (y/n)......: ' unique
 
   # Build Certificate Authority
   func_title
@@ -106,6 +112,10 @@ func_build_server(){
   if [[ "${routeall}" == [yY] ]]
   then
     echo 'push "redirect-gateway def1"' >> ${ovpnsvr_cnf}
+  fi
+  if [[ "${unique}" == [yY] ]]
+  then
+    echo 'unique_subject = no' >> ${openvpn_dir}/easy-rsa/keys/index.txt.attr
   fi
   echo "push "dhcp-option DNS ${dns}"" >> ${ovpnsvr_cnf}
   echo 'keepalive 10 120' >> ${ovpnsvr_cnf}
