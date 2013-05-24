@@ -14,3 +14,9 @@ Usage
 * -i | --install = Install OpenVPN Packages
 * -s | --server  = Build Server Configuration
 * -c | --client  = Build Client Configuration
+
+Supported Operating Systems
+---------------------------
+
+* Debian 5-7
+* Ubuntu 12.x
