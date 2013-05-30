@@ -7,9 +7,9 @@ BuildVPN makes it easy to automate the installation and configuration of OpenVPN
 Specifically, it goes through the steps necessary to setup, manage, and maintain OpenVPN servers including:
 
 * Configuring a certificate authority and key server.
-* Generating encryption keys including DH and TLS-Auth.
+* Generating encryption keys Diffie Hellman  and TLS-Auth.
 * Creates a server.conf file to meet the needs of your environment.
-* Builds client certificate packages for authentication for both *Nix and Windows.
+* Builds client certificate authentication configurations for both *Nix and Windows.
 
 Usage
 -----
