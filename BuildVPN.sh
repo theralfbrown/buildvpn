@@ -1,10 +1,8 @@
 #!/bin/bash
 ########################################################################################
-# BuildVPN.sh | By: Michael Wright
+# BuildVPN.sh
 ########################################################################################
-#
 # [Description]: Script to automate the buildout of OpenVPN servers and clients.
-#
 ########################################################################################
 
 # Global Variables
@@ -21,7 +19,7 @@ func_title(){
 
   # Print Title
   echo '=============================================================================='
-  echo ' BuildVPN 1.3.3 | By: Michael Wright | Updated: 05.09.2013'
+  echo ' BuildVPN 1.3.4 | [By]: Michael Wright | [Updated]: 08.22.2013'
   echo '=============================================================================='
   echo
 }
@@ -69,6 +67,8 @@ func_build_server(){
   echo '[*] Preparing Directories'
   cp -R ${easyrsa_tmp} ${easyrsa_dir}
   cd ${easyrsa_dir}
+  # Increased Key Size To 2048
+  sed -i 's/KEY_SIZE=1024/KEY_SIZE=2048/g' vars
   # Workaround For Ubuntu 12.x
   if [ "${os}" == '2' ]
   then
@@ -101,7 +101,7 @@ func_build_server(){
   echo "ca ${ovpnkey_dir}/ca.crt" >> ${ovpnsvr_cnf}
   echo "cert ${ovpnkey_dir}/${host}.crt" >> ${ovpnsvr_cnf}
   echo "key ${ovpnkey_dir}/${host}.key" >> ${ovpnsvr_cnf}
-  echo "dh ${ovpnkey_dir}/dh1024.pem" >> ${ovpnsvr_cnf}
+  echo "dh ${ovpnkey_dir}/dh2048.pem" >> ${ovpnsvr_cnf}
   echo "server ${vpnnet} ${netmsk}" >> ${ovpnsvr_cnf}
   echo 'ifconfig-pool-persist ipp.txt' >> ${ovpnsvr_cnf}
   if [[ "${routeall}" == [yY] ]]
