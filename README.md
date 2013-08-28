@@ -1,5 +1,5 @@
-BuildVPN 1.3.4
-==============
+BuildVPN
+========
 
 Description
 -----------
@@ -20,6 +20,7 @@ Usage
 * -i | --install = Install OpenVPN Packages
 * -s | --server  = Build Server Configuration
 * -c | --client  = Build Client Configuration
+* -u | --update  = Update BuildVPN Script
 
 Supported Operating Systems
 ---------------------------
