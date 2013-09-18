@@ -13,14 +13,16 @@ Specifically, it goes through the steps necessary to setup, manage, and maintain
 
 Usage
 -----
-./BuildVPN.sh [OPTION]
+**Running BuildVPN**
+
+ ./BuildVPN.sh [OPTION]
 
 **Supported Switches:**
 
-* -i | --install = Install OpenVPN Packages
-* -s | --server  = Build Server Configuration
-* -c | --client  = Build Client Configuration
-* -u | --update  = Update BuildVPN Script
+* -i = Install OpenVPN Packages
+* -s = Build Server Configuration
+* -c = Build Client Configuration
+* -u = Update BuildVPN Script
 
 Supported Operating Systems
 ---------------------------
