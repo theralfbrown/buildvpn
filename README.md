@@ -3,13 +3,13 @@ BuildVPN
 
 Description
 -----------
-BuildVPN makes it easy to automate the installation and configuration of OpenVPN servers as well as building client certificates for authentication.
+BuildVPN makes it easy to automate the installation and configuration of OpenVPN servers and building client certificates for authentication.
 Specifically, it goes through the steps necessary to setup, manage, and maintain OpenVPN servers including:
 
 * Configuring a certificate authority and key server.
-* Generating encryption keys Diffie Hellman  and TLS-Auth.
+* Generating Diffie Hellman and TLS-Auth encryption keys.
 * Creates a server.conf file to meet the needs of your environment.
-* Builds client certificate authentication configurations for both *Nix and Windows.
+* Builds client certificate authentication configurations for both Linux and Windows platforms.
 
 Usage
 -----
@@ -22,10 +22,10 @@ Usage
 * -i = Install OpenVPN Packages
 * -s = Build Server Configuration
 * -c = Build Client Configuration
-* -u = Update BuildVPN Script
 
 Supported Operating Systems
 ---------------------------
 
-* Debian 5-7
-* Ubuntu 12.x
+* Debian 5+
+* Ubuntu 12+
+* RHEL/Centos 6+

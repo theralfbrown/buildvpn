@@ -1,13 +1,7 @@
 #!/bin/bash
-########################################################################################
-# BuildVPN.sh
-########################################################################################
-# [Description]: Script to automate the buildout of OpenVPN servers and clients.
-########################################################################################
 
 # Global Variables
 openvpn_dir='/etc/openvpn'
-easyrsa_tmp='/usr/share/doc/openvpn/examples/easy-rsa/2.0'
 easyrsa_dir='/etc/openvpn/easy-rsa'
 ovpnkey_dir='/etc/openvpn/easy-rsa/keys'
 ovpnsvr_cnf='/etc/openvpn/server.conf'
@@ -19,30 +13,79 @@ func_title(){
 
   # Print Title
   echo '================================================================'
-  echo ' BuildVPN.sh | [Version]: 1.4.1 | [Updated]: 09.17.2013'
+  echo ' BuildVPN.sh | [Version]: 1.5.0 | [Updated]: 01.14.2014'
   echo '================================================================'
+}
+
+# Supported OS Function
+func_os(){
+  # Print Supported OS
+  echo '[ Supported Operating Systems ]'
+  echo
+  echo ' 1 = Debian......(5+)'
+  echo ' 2 = Ubuntu......(12+)'
+  echo ' 3 = RHEL/CentOS.(6+)'
+  echo
 }
 
 # Server Install Function
 func_install(){
-  # Install Packages Through Apt-Get
-  apt-get -y install openvpn openssl
+  # Get User Input
+  func_os
+  read -p 'Enter Operating System.....................: ' os
+  # OpenVPN Installer Statement
+  if [[ ${os} =~ [1-2] ]]
+  then
+    # Install Using Apt-Get (Debian-Based)
+    func_title
+    echo '[*] Updating Apt Sources'
+    echo
+    apt-get update
+    echo
+    echo '[*] Installing Packages'
+    apt-get -y install openvpn openssl
+  elif [ ${os} == '3' ]
+  then
+    # Install Using Yum (RHEL-Based)
+    func_title
+    echo
+    echo '[ EPEL Repository Required ]'
+    echo
+    echo ' To install OpenVPN on a RHEL-based OS, EPEL is required.'
+    echo
+    read -p 'Install EPEL Repository? (y/n)...........: ' epel
+    if [ ${epel} == 'y' ]
+    then
+      func_title
+      echo '[*] Installing EPEL Repository'
+      rpm -ivh ftp://mirror.cs.princeton.edu/pub/mirrors/fedora-epel/6/i386/epel-release-6-8.noarch.rpm
+      echo
+      echo '[*] Installing Packages'
+      yum install openvpn easy-rsa
+    else
+      func_title
+      echo
+      echo '[Error]: User aborted installation.'
+      echo
+      exit 1
+    fi
+  else
+    # Retry For People Who Don't Read Well
+    func_title
+    echo
+    func_install
+  fi
   echo
 }
 
 # Server Buildout Function
 func_build_server(){
   # Get User Input
-  echo '[ Supported Operating Systems ]'
-  echo
-  echo ' 1 = Debian (5/6/7)'
-  echo ' 2 = Ubuntu (12.04)'
-  echo
+  func_os
   read -p 'Enter Operating System.....................: ' os
   # Retry For People Who Don't Read Well
-  if [ ${os} != '1' ] && [ ${os} != '2' ]
+  if [[ ! ${os} =~ [1-3] ]]
   then
-    clear
     func_title
     echo
     func_build_server
@@ -80,7 +123,13 @@ func_build_server(){
   func_title
   echo
   echo '[*] Preparing Directories'
-  cp -R ${easyrsa_tmp} ${easyrsa_dir}
+  # Copy Easy-RSA Sample Directory
+  if [[ ${os} =~ [1-2] ]]
+  then
+    cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 ${easyrsa_dir}
+  else
+    cp -R /usr/share/easy-rsa/2.0 ${easyrsa_dir}
+  fi
   cd ${easyrsa_dir}
   # Modify OpenSSL Variables For 2048 Bit Encryption
   if [[ ${incbits} == [yY] ]]
@@ -147,7 +196,13 @@ func_build_server(){
   echo 'comp-lzo' >> ${ovpnsvr_cnf}
   echo "max-clients ${maxconn}" >> ${ovpnsvr_cnf}
   echo 'user nobody' >> ${ovpnsvr_cnf}
-  echo 'group nogroup' >> ${ovpnsvr_cnf}
+  # Determine Unprivileged Group To Use
+  if [ ${os} == '3' ]
+  then
+    echo 'group nobody' >> ${ovpnsvr_cnf}
+  else
+    echo 'group nogroup' >> ${ovpnsvr_cnf}
+  fi
   echo 'persist-key' >> ${ovpnsvr_cnf}
   echo 'persist-tun' >> ${ovpnsvr_cnf}
   echo "status ${openvpn_dir}/status.log" >> ${ovpnsvr_cnf}
@@ -160,6 +215,7 @@ func_build_server(){
   then
     echo '[*] Enabling IPv4 Forwarding In /etc/sysctl.conf'
     sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+    sed -i 's/net.ipv4.ip_forward=0/net.ipv4.ip_forward=1/' /etc/sysctl.conf
     echo '[*] Reloading sysctl Configuration'
     /sbin/sysctl -p >> /dev/null 2>&1
   fi
@@ -169,6 +225,7 @@ func_build_server(){
   then
     echo '[*] Enabling IPv6 Forwarding In /etc/sysctl.conf'
     sed -i 's/#net.ipv6.conf.all.forwarding=1/net.ipv6.conf.all.forwarding=1/' /etc/sysctl.conf
+    sed -i 's/net.ipv6.conf.all.forwarding=0/net.ipv6.conf.all.forwarding=1/' /etc/sysctl.conf
     echo '[*] Reloading sysctl Configuration'
     /sbin/sysctl -p >> /dev/null 2>&1
   fi
@@ -192,6 +249,15 @@ func_build_server(){
 # Build Client Certificates Function
 func_build_client(){
   # Get User Input
+  func_os
+  # Retry For People Who Don't Read Well
+  read -p 'Enter Operating System.........................: ' os
+  if [[ ! ${os} =~ [1-3] ]]
+  then
+    func_title
+    echo
+    func_build_client
+  fi
   read -p 'Enter Username (No Spaces).....................: ' user
   read -p 'Enter Name For Configuration File (No Spaces)..: ' confname
   echo
@@ -207,7 +273,7 @@ func_build_client(){
   then
     read -p 'Enter Node Name (Required For Windows Clients).: ' node
   fi
-  
+
   # Build Certificate
   func_title
   echo
@@ -215,10 +281,10 @@ func_build_client(){
   cd ${easyrsa_dir}
   . ./vars
   ./build-key ${user}
-  
+
   # Prepare Client Build Directory
   cd ${openvpn_dir} && mkdir ${user}
-  
+
   # Build Client Configuration
   func_title
   echo
@@ -234,11 +300,16 @@ func_build_client(){
   echo "remote ${ip} 1194" >> ${user}/${confname}.ovpn
   echo 'resolv-retry infinite' >> ${user}/${confname}.ovpn
   echo 'nobind' >> ${user}/${confname}.ovpn
-  # Set Unprivileged User And Group For Linux Clients
+  # Set Unprivileged User & Group For Linux Clients
   if [[ ${windows} != [yY] ]]
   then
     echo 'user nobody' >> ${user}/${confname}.ovpn
-    echo 'group nogroup' >> ${user}/${confname}.ovpn
+    if [ ${os} == '3' ]
+    then
+      echo 'group nobody' >> ${user}/${confname}.ovpn
+    else
+      echo 'group nogroup' >> ${user}/${confname}.ovpn
+    fi
   fi
   echo 'persist-key' >> ${user}/${confname}.ovpn
   echo 'persist-tun' >> ${user}/${confname}.ovpn
@@ -262,7 +333,7 @@ func_build_client(){
   echo 'mute 20' >> ${user}/${confname}.ovpn
 
   # Build Client Tarball
-  echo "[*] Creating ${user}.tar Configuration Package In: ${openvpn_dir}"
+  echo "[*] Creating ${user}-${confname}.tar Configuration Package In: ${openvpn_dir}"
   tar -cf ${user}-${confname}.tar ${user}
 
   # Clean Up Temp Files
@@ -275,26 +346,12 @@ func_build_client(){
   exit 0
 }
 
-# Update BuildVPN Script Function
-func_update(){
-  echo '[*] Preparing Update'
-  # Determine BuildVPN Directory
-  scriptdir=`dirname ${0}`
-  # Determine Git Binary Location
-  gitcmd=`which git`
-  cd "${scriptdir}"
-  # Initialize Git Update
-  echo '[*] Starting BuildVPN Update'
-  ${gitcmd} pull
-  echo
-}
-
 # Check Permissions
 if [ `whoami` != 'root' ]
 then
   func_title
   echo
-  echo '[ERROR]: You must run this script with root privileges.'
+  echo '[Error]: You must run this script with root privileges.'
   echo
   exit 1
 fi
@@ -314,19 +371,12 @@ case ${1} in
     echo
     func_build_client
     ;;
-  -u)
-    echo
-    func_update
-    ;;
   *)
-    echo ' [By]: Mike Wright | [GitHub]: http://github.com/themightyshiv'
-    echo '================================================================'
     echo
     echo "[Usage]...: ${0} [OPTION]"
     echo '[Options].:'
     echo '            -i = Install OpenVPN Packages'
     echo '            -s = Build Server Configuration'
     echo '            -c = Build Client Configuration'
-    echo '            -u = Update BuildVPN Script'
     echo
 esac
