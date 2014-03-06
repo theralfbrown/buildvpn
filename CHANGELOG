@@ -1,3 +1,11 @@
+[03/06/2014]
+     Released.: Version 1.5.1
+     Modified.: Cosmetics and Code Cleanup
+     Modified.: Masquerading (NAT) Question
+     Modified.: Renamed LICENSE to COPYING
+     Removed..: Unnecessary Client Config Questions
+     Removed..: Unnecessary Client Config Options
+
 [01/14/2014]
      Released.: Version 1.5.0
      Added....: Support For Red Hat and CentOS

@@ -13,7 +13,7 @@ func_title(){
 
   # Print Title
   echo '================================================================'
-  echo ' BuildVPN.sh | [Version]: 1.5.0 | [Updated]: 01.14.2014'
+  echo ' BuildVPN.sh | [Version]: 1.5.1 | [Updated]: 03.06.2014'
   echo '================================================================'
 }
 
@@ -34,18 +34,16 @@ func_install(){
   func_os
   read -p 'Enter Operating System.....................: ' os
   # OpenVPN Installer Statement
-  if [[ ${os} =~ [1-2] ]]
-  then
+  if [[ ${os} =~ [1-2] ]]; then
     # Install Using Apt-Get (Debian-Based)
     func_title
-    echo '[*] Updating Apt Sources'
     echo
+    echo '[*] Updating Apt Sources'
     apt-get update
     echo
     echo '[*] Installing Packages'
     apt-get -y install openvpn openssl
-  elif [ ${os} == '3' ]
-  then
+  elif [ ${os} == '3' ]; then
     # Install Using Yum (RHEL-Based)
     func_title
     echo
@@ -54,9 +52,9 @@ func_install(){
     echo ' To install OpenVPN on a RHEL-based OS, EPEL is required.'
     echo
     read -p 'Install EPEL Repository? (y/n)...........: ' epel
-    if [ ${epel} == 'y' ]
-    then
+    if [ ${epel} == 'y' ]; then
       func_title
+      echo
       echo '[*] Installing EPEL Repository'
       rpm -ivh ftp://mirror.cs.princeton.edu/pub/mirrors/fedora-epel/6/i386/epel-release-6-8.noarch.rpm
       echo
@@ -65,7 +63,7 @@ func_install(){
     else
       func_title
       echo
-      echo '[Error]: User aborted installation.'
+      echo '[!] Abort: User aborted installation.'
       echo
       exit 1
     fi
@@ -84,8 +82,7 @@ func_build_server(){
   func_os
   read -p 'Enter Operating System.....................: ' os
   # Retry For People Who Don't Read Well
-  if [[ ! ${os} =~ [1-3] ]]
-  then
+  if [[ ! ${os} =~ [1-3] ]]; then
     func_title
     echo
     func_build_server
@@ -107,16 +104,14 @@ func_build_server(){
   read -p 'Allow Certificates With Same Subject (y/n).: ' unique
   read -p 'Enable IP Forwarding (y/n).................: ' forward
   # Determine What IP Protocols To Forward For
-  if [[ ${forward} == [yY] ]]
-  then
+  if [[ ${forward} == [yY] ]]; then
     read -p 'Forward IPv4 (y/n).........................: ' forward4
     read -p 'Forward IPv6 (y/n).........................: ' forward6
   fi
   read -p 'Enable IPTables Masquerading (y/n).........: ' enablenat
   # Determine What Interface To Use For Masquerading
-  if [[ ${enablenat} == [yY] ]]
-  then
-    read -p 'Enter Interface To Use For NAT.............: ' natif
+  if [[ ${enablenat} == [yY] ]]; then
+    read -p 'Enter Interface To Use For Masquerading....: ' natif
   fi
 
   # Build Certificate Authority
@@ -124,21 +119,18 @@ func_build_server(){
   echo
   echo '[*] Preparing Directories'
   # Copy Easy-RSA Sample Directory
-  if [[ ${os} =~ [1-2] ]]
-  then
+  if [[ ${os} =~ [1-2] ]]; then
     cp -R /usr/share/doc/openvpn/examples/easy-rsa/2.0 ${easyrsa_dir}
   else
     cp -R /usr/share/easy-rsa/2.0 ${easyrsa_dir}
   fi
   cd ${easyrsa_dir}
   # Modify OpenSSL Variables For 2048 Bit Encryption
-  if [[ ${incbits} == [yY] ]]
-  then
+  if [[ ${incbits} == [yY] ]]; then
     sed -i 's/KEY_SIZE=1024/KEY_SIZE=2048/g' vars
   fi
   # Workaround For Ubuntu 12.x
-  if [ ${os} == '2' ]
-  then
+  if [ ${os} == '2' ]; then
     echo '[*] Preparing Ubuntu Config File'
     cp openssl-1.0.0.cnf openssl.cnf
   fi
@@ -172,8 +164,7 @@ func_build_server(){
   echo "cert ${ovpnkey_dir}/${host}.crt" >> ${ovpnsvr_cnf}
   echo "key ${ovpnkey_dir}/${host}.key" >> ${ovpnsvr_cnf}
   # Determine If Increased Key Size Option Was Chosen
-  if [[ ${incbits} == [yY] ]]
-  then
+  if [[ ${incbits} == [yY] ]]; then
     echo "dh ${ovpnkey_dir}/dh2048.pem" >> ${ovpnsvr_cnf}
   else
     echo "dh ${ovpnkey_dir}/dh1024.pem" >> ${ovpnsvr_cnf}
@@ -181,13 +172,11 @@ func_build_server(){
   echo "server ${vpnnet} ${netmsk}" >> ${ovpnsvr_cnf}
   echo 'ifconfig-pool-persist ipp.txt' >> ${ovpnsvr_cnf}
   # Determine If Route All Traffic Option Was Chosen
-  if [[ ${routeall} == [yY] ]]
-  then
+  if [[ ${routeall} == [yY] ]]; then
     echo 'push "redirect-gateway def1"' >> ${ovpnsvr_cnf}
   fi
   # Determine If Unique Subjects Option Was Chosen
-  if [[ ${unique} == [yY] ]]
-  then
+  if [[ ${unique} == [yY] ]]; then
     echo 'unique_subject = no' >> ${openvpn_dir}/easy-rsa/keys/index.txt.attr
   fi
   echo "push "dhcp-option DNS ${dns}"" >> ${ovpnsvr_cnf}
@@ -197,8 +186,7 @@ func_build_server(){
   echo "max-clients ${maxconn}" >> ${ovpnsvr_cnf}
   echo 'user nobody' >> ${ovpnsvr_cnf}
   # Determine Unprivileged Group To Use
-  if [ ${os} == '3' ]
-  then
+  if [ ${os} == '3' ]; then
     echo 'group nobody' >> ${ovpnsvr_cnf}
   else
     echo 'group nogroup' >> ${ovpnsvr_cnf}
@@ -209,37 +197,30 @@ func_build_server(){
   echo "log ${openvpn_dir}/openvpn.log" >> ${ovpnsvr_cnf}
   echo 'verb 3' >> ${ovpnsvr_cnf}
   echo 'mute 20' >> ${ovpnsvr_cnf}
-
   # Determine If IPv4 Forwarding Option Was Chosen
-  if [[ ${forward4} == [yY] ]]
-  then
+  if [[ ${forward4} == [yY] ]]; then
     echo '[*] Enabling IPv4 Forwarding In /etc/sysctl.conf'
     sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
     sed -i 's/net.ipv4.ip_forward=0/net.ipv4.ip_forward=1/' /etc/sysctl.conf
     echo '[*] Reloading sysctl Configuration'
     /sbin/sysctl -p >> /dev/null 2>&1
   fi
-
   # Determine If IPv6 Forwarding Option Was Chosen
-  if [[ ${forward6} == [yY] ]]
-  then
+  if [[ ${forward6} == [yY] ]]; then
     echo '[*] Enabling IPv6 Forwarding In /etc/sysctl.conf'
     sed -i 's/#net.ipv6.conf.all.forwarding=1/net.ipv6.conf.all.forwarding=1/' /etc/sysctl.conf
     sed -i 's/net.ipv6.conf.all.forwarding=0/net.ipv6.conf.all.forwarding=1/' /etc/sysctl.conf
     echo '[*] Reloading sysctl Configuration'
     /sbin/sysctl -p >> /dev/null 2>&1
   fi
-
   # Determine If IPTables NAT Option Was Chosen
-  if [[ ${enablenat} == [yY] ]]
-  then
+  if [[ ${enablenat} == [yY] ]]; then
     echo '[*] Loading IPTables Masquerading Rule Into Current Ruleset'
     /sbin/iptables -t nat -A POSTROUTING -o ${natif} -j MASQUERADE
     echo '[*] Adding IPTables Masquerading Rule To /etc/rc.local'
     sed -i "s:exit 0:/sbin/iptables -t nat -A POSTROUTING -o ${natif} -j MASQUERADE:" /etc/rc.local
     echo "exit 0" >> /etc/rc.local
   fi
-
   # Finish Message
   echo '[*] Server Buildout Complete'
   echo
@@ -248,16 +229,6 @@ func_build_server(){
 
 # Build Client Certificates Function
 func_build_client(){
-  # Get User Input
-  func_os
-  # Retry For People Who Don't Read Well
-  read -p 'Enter Operating System.........................: ' os
-  if [[ ! ${os} =~ [1-3] ]]
-  then
-    func_title
-    echo
-    func_build_client
-  fi
   read -p 'Enter Username (No Spaces).....................: ' user
   read -p 'Enter Name For Configuration File (No Spaces)..: ' confname
   echo
@@ -269,8 +240,7 @@ func_build_client(){
   read -p 'Enter IP/Hostname OpenVPN Server Binds To......: ' ip
   read -p 'Will This Client Run Under Windows (y/n).......: ' windows
   # Additional Configuration For Windows Clients
-  if [[ ${windows} == [yY] ]]
-  then
+  if [[ ${windows} == [yY] ]]; then
     read -p 'Enter Node Name (Required For Windows Clients).: ' node
   fi
 
@@ -292,25 +262,13 @@ func_build_client(){
   echo 'client' > ${user}/${confname}.ovpn
   echo 'dev tun' >> ${user}/${confname}.ovpn
   # Determine If Windows Options Were Chosen
-  if [[ ${windows} == [yY] ]]
-  then
+  if [[ ${windows} == [yY] ]]; then
     echo "dev-node ${node}" >> ${user}/${confname}.ovpn
   fi
   echo 'proto udp' >> ${user}/${confname}.ovpn
   echo "remote ${ip} 1194" >> ${user}/${confname}.ovpn
   echo 'resolv-retry infinite' >> ${user}/${confname}.ovpn
   echo 'nobind' >> ${user}/${confname}.ovpn
-  # Set Unprivileged User & Group For Linux Clients
-  if [[ ${windows} != [yY] ]]
-  then
-    echo 'user nobody' >> ${user}/${confname}.ovpn
-    if [ ${os} == '3' ]
-    then
-      echo 'group nobody' >> ${user}/${confname}.ovpn
-    else
-      echo 'group nogroup' >> ${user}/${confname}.ovpn
-    fi
-  fi
   echo 'persist-key' >> ${user}/${confname}.ovpn
   echo 'persist-tun' >> ${user}/${confname}.ovpn
   echo 'mute-replay-warnings' >> ${user}/${confname}.ovpn
@@ -347,11 +305,10 @@ func_build_client(){
 }
 
 # Check Permissions
-if [ `whoami` != 'root' ]
-then
+if [ `whoami` != 'root' ]; then
   func_title
   echo
-  echo '[Error]: You must run this script with root privileges.'
+  echo '[!] Error: You must run this script with root privileges.'
   echo
   exit 1
 fi
