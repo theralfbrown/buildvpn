@@ -39,7 +39,7 @@ func_install(){
     host_os=$(cat /etc/issue.net|cut -d" " -f1)
   fi
   # Determine OS
-  if [[ ${host_os} == 'Debian' ]]; then
+  if [[ ${host_os} == 'Debian' ]] || [[ ${host_os} == 'Ubuntu' ]]; then
     os='1'
   elif [[ ${host_os} == 'RHEL' ]]; then
     os='2'
