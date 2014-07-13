@@ -28,4 +28,4 @@ Supported Operating Systems
 
 * Debian 5+
 * Ubuntu 12+
-* RHEL/Centos 6+
+* RHEL/Centos 5+
