@@ -1,3 +1,11 @@
+[10/30/2014]
+     Released.: Version 1.6.1
+     Fixed....: easy-rsa Auto-Detection
+     Fixed....: Issue Creating VPN on Ubuntu 14
+     Fixed....: Cleaned Up Interfaces View
+     Modified.: Encryption Key Size is Now User Definable
+     Modified.: Cosmetics
+
 [07/13/2014]
      Released.: Version 1.6.0
      Added....: OS Auto-Detection
