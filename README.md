@@ -25,7 +25,4 @@ Usage
 
 Supported Operating Systems
 ---------------------------
-
 * Debian 5+
-* Ubuntu 12-14
-* RHEL/Centos 5-6
