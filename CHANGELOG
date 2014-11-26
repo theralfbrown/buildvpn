@@ -1,3 +1,12 @@
+[11/26/2014]
+     Released.: Version 1.7.0
+     Fixed....: Issue with Multiple easy-rsa Sample Directories
+     Fixed....: Issue where Script Initiation was Slow
+     Fixed....: Interface Listing
+     Added....: Additional Validation Checks
+     Removed..: Support for Ubuntu and RHEL-based OS.
+     Removed..: Unnecessary Input Requests
+
 [10/30/2014]
      Released.: Version 1.6.1
      Fixed....: easy-rsa Auto-Detection
