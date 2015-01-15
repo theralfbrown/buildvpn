@@ -48,7 +48,7 @@ func_build_server(){
   echo '+----------------------+'
   echo '| Available Interfaces |'
   echo '+----------------------+'
-  ifconfig|awk '/encap:Ethernet |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
   echo
   read -p 'Enter IP OpenVPN Server Will Bind To.......: ' vpnip
   read -p 'Enter Subnet For VPN (ex: 192.168.100.0)...: ' vpnnet
@@ -176,7 +176,7 @@ func_build_client(){
   echo '+------------------------+'
   echo '| Available IP Addresses |'
   echo '+------------------------+'
-  ifconfig|awk '/encap:Ethernet |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
   echo
   read -p 'Enter IP/Hostname OpenVPN Server Binds To......: ' vpnip
 
@@ -206,17 +206,21 @@ func_build_client(){
   echo 'mute-replay-warnings' >> ${user}/${confname}.ovpn
   echo '<ca>' >> ${user}/${confname}.ovpn
   cat ${ovpnkey_dir}/ca.crt >> ${user}/${confname}.ovpn
+  cp ${ovpnkey_dir}/ca.crt ${user}/ca.crt
   echo '</ca>' >> ${user}/${confname}.ovpn
   echo '<cert>' >> ${user}/${confname}.ovpn
   cat ${ovpnkey_dir}/${user}.crt|awk '!/^ |Certificate:/'|sed '/^$/d' >> ${user}/${confname}.ovpn
+  cp ${ovpnkey_dir}/${user}.crt ${user}/${user}.crt
   echo '</cert>' >> ${user}/${confname}.ovpn
   echo '<key>' >> ${user}/${confname}.ovpn
   cat ${ovpnkey_dir}/${user}.key >> ${user}/${confname}.ovpn
+  cp ${ovpnkey_dir}/${user}.key ${user}/${user}.key
   echo '</key>' >> ${user}/${confname}.ovpn
   echo 'ns-cert-type server' >> ${user}/${confname}.ovpn
   echo 'key-direction 1' >> ${user}/${confname}.ovpn
   echo '<tls-auth>' >> ${user}/${confname}.ovpn
   cat ${ovpnkey_dir}/ta.key|awk '!/#/' >> ${user}/${confname}.ovpn
+  cp ${ovpnkey_dir}/ta.key ${user}/ta.key
   echo '</tls-auth>' >> ${user}/${confname}.ovpn
   echo 'comp-lzo' >> ${user}/${confname}.ovpn
   echo 'verb 3' >> ${user}/${confname}.ovpn
@@ -233,6 +237,32 @@ func_build_client(){
   # Finish Message
   echo "[*] Client ${user} Buildout Complete"
   echo
+  exit 0
+}
+
+func_build_tunnel(){
+  echo
+  echo '+--------------------------+'
+  echo '| Available Interfaces/IPs |'
+  echo '+--------------------------+'
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
+  echo
+  read -p 'Enter the external IP something will be connecting to.......: ' etunip
+  read -p 'Enter the external port something will be connecting to.....: ' etunport
+  read -p 'Enter the internal IP something will be forwarded to........: ' itunip
+  read -p 'Enter the internal port something will be forwarded to......: ' itunport
+  read -p 'Enter the protocol the connection will use..................: ' tunproto
+  echo '[*] Loading IPTables Prerouting Rule Into Current Ruleset'
+  /sbin/iptables -t nat -A PREROUTING -p ${tunproto} -d ${etunip} --dport ${etunport} -j DNAT --to-destination ${itunip}:${itunport}
+
+  echo
+  read -p 'Do you have another tunnel to add? (y/n)....................: ' moretun
+
+  if [[ ${moretun} == [yY] ]]; then
+    func_build_tunnel
+  else
+    echo '[*] Exiting the script'
+  fi
   exit 0
 }
 
@@ -260,11 +290,16 @@ case ${1} in
     echo
     func_build_client
     ;;
+  -t)
+    echo
+    func_build_tunnel
+    ;;
   *)
     echo
     echo "[Usage]...: ${0} [OPTION]"
     echo '[Options].: -i = Install OpenVPN Packages'
     echo '            -s = Build Server Configuration'
     echo '            -c = Build Client Configuration'
+    echo '            -t = Build External-to-Internal tunnel'
     echo
 esac
