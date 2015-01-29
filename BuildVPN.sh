@@ -6,6 +6,7 @@ easyrsa_dir='/etc/openvpn/easy-rsa'
 ovpnkey_dir='/etc/openvpn/easy-rsa/keys'
 ovpnsvr_cnf='/etc/openvpn/server.conf'
 ovpncrt_dir='/etc/openvpn/certs'
+debian_vers=$(cat /etc/debian_version|cut -d"." -f1)
 
 # Title Function
 func_title(){
@@ -14,7 +15,7 @@ func_title(){
 
   # Print Title
   echo '================================================================'
-  echo ' BuildVPN.sh | [Version]: 1.7.0 | [Updated]: 11.26.2014'
+  echo ' BuildVPN.sh | [Version]: 1.8.0 | [Updated]: 01.29.2015'
   echo '================================================================'
 }
 
@@ -48,7 +49,7 @@ func_build_server(){
   echo '+----------------------+'
   echo '| Available Interfaces |'
   echo '+----------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
   echo
   read -p 'Enter IP OpenVPN Server Will Bind To.......: ' vpnip
   read -p 'Enter Subnet For VPN (ex: 192.168.100.0)...: ' vpnnet
@@ -176,7 +177,7 @@ func_build_client(){
   echo '+------------------------+'
   echo '| Available IP Addresses |'
   echo '+------------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
   echo
   read -p 'Enter IP/Hostname OpenVPN Server Binds To......: ' vpnip
 
@@ -240,37 +241,55 @@ func_build_client(){
   exit 0
 }
 
+# Build External-to-Internal Tunnel
+# Thanks to Johnny-Nohandle (https://github.com/johnny-nohandle)
 func_build_tunnel(){
+  # Get Tunnel Configuration User Input
+  echo '+----------------------+'
+  echo '| Available Interfaces |'
+  echo '+----------------------+'
+  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
   echo
-  echo '+--------------------------+'
-  echo '| Available Interfaces/IPs |'
-  echo '+--------------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2; done
+  read -p 'Enter External IP The Tunnel Binds To......: ' etunip
+  read -p 'Enter External Port The Tunnel Binds To....: ' etunport
+  read -p 'Enter Internal IP The Tunnel Forwards To...: ' itunip
+  read -p 'Enter Internal Port The Tunnel Forwards To.: ' itunport
+  read -p 'Enter Protocol The Tunnel Will Use.........: ' tunproto
+
+  # Reconfigure Current IPTables and Save Configuration to Startup
   echo
-  read -p 'Enter the external IP something will be connecting to.......: ' etunip
-  read -p 'Enter the external port something will be connecting to.....: ' etunport
-  read -p 'Enter the internal IP something will be forwarded to........: ' itunip
-  read -p 'Enter the internal port something will be forwarded to......: ' itunport
-  read -p 'Enter the protocol the connection will use..................: ' tunproto
   echo '[*] Loading IPTables Prerouting Rule Into Current Ruleset'
   /sbin/iptables -t nat -A PREROUTING -p ${tunproto} -d ${etunip} --dport ${etunport} -j DNAT --to-destination ${itunip}:${itunport}
+  echo '[*] Adding IPTables Prerouting Rule To /etc/rc.local'
+  sed -i "s,^exit 0,/sbin/iptables -t nat -A PREROUTING -p ${tunproto} -d ${etunip} --dport ${etunport} -j DNAT --to-destination ${itunip}:${itunport}," /etc/rc.local
+  echo "exit 0" >> /etc/rc.local
 
   echo
-  read -p 'Do you have another tunnel to add? (y/n)....................: ' moretun
+  read -p 'Do You Have Another Tunnel To Add? (y/n)...: ' moretun
 
   if [[ ${moretun} == [yY] ]]; then
     func_build_tunnel
   else
-    echo '[*] Exiting the script'
+    echo '[*] Tunnel Buildout Complete'
+    echo
+    exit 0
   fi
-  exit 0
 }
 
 # Check Permissions
-if [ `whoami` != 'root' ]; then
+if [ $(whoami) != 'root' ]; then
   func_title
   echo
   echo '[!] Error: You must run this script with root privileges.'
+  echo
+  exit 1
+fi
+
+# Check Debian
+if [[ ! ${debian_vers} -ge '7' ]]; then
+  func_title
+  echo
+  echo '[!] Error: BuildVPN.sh is only supported on Debian version 7+.'
   echo
   exit 1
 fi
@@ -300,6 +319,6 @@ case ${1} in
     echo '[Options].: -i = Install OpenVPN Packages'
     echo '            -s = Build Server Configuration'
     echo '            -c = Build Client Configuration'
-    echo '            -t = Build External-to-Internal tunnel'
+    echo '            -t = Build External-to-Internal Tunnel'
     echo
 esac
