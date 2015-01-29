@@ -15,7 +15,7 @@ func_title(){
 
   # Print Title
   echo '================================================================'
-  echo ' BuildVPN.sh | [Version]: 1.8.0 | [Updated]: 01.29.2015'
+  echo ' BuildVPN.sh | [Version]: 1.8.1 | [Updated]: 01.29.2015'
   echo '================================================================'
 }
 
@@ -286,10 +286,10 @@ if [ $(whoami) != 'root' ]; then
 fi
 
 # Check Debian
-if [[ ! ${debian_vers} -ge '7' ]]; then
+if [[ ! ${debian_vers} -ge '5' ]]; then
   func_title
   echo
-  echo '[!] Error: BuildVPN.sh is only supported on Debian version 7+.'
+  echo '[!] Error: BuildVPN.sh is only supported on Debian version 5+.'
   echo
   exit 1
 fi
