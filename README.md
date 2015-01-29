@@ -22,7 +22,7 @@ Usage
 * -i = Install OpenVPN Packages
 * -s = Build Server Configuration
 * -c = Build Client Configuration
-* -t = Build External-to-Internal tunnel
+* -t = Build External-to-Internal Tunnel
 
 Supported Operating Systems
 ---------------------------
