@@ -1,3 +1,10 @@
+[01/29/2015]
+     Released.: Version 1.8.0
+     Added....: External-to-Internal Tunnel Option (Thanks Johnny-Nohandle)
+     Added....: Debian OS/Version Validation Checks
+     Updated..: Contributor List in THANKS File
+     Modified.: Cosmetics
+
 [11/26/2014]
      Released.: Version 1.7.0
      Fixed....: Issue with Multiple easy-rsa Sample Directories
