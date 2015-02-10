@@ -6,7 +6,7 @@ easyrsa_dir='/etc/openvpn/easy-rsa'
 ovpnkey_dir='/etc/openvpn/easy-rsa/keys'
 ovpnsvr_cnf='/etc/openvpn/server.conf'
 ovpncrt_dir='/etc/openvpn/certs'
-debian_vers=$(cat /etc/debian_version|cut -d"." -f1)
+os_distro=$(cat /etc/issue|head -n1|cut -d" " -f1)
 
 # Title Function
 func_title(){
@@ -14,9 +14,9 @@ func_title(){
   clear
 
   # Print Title
-  echo '================================================================'
-  echo ' BuildVPN.sh | [Version]: 1.8.1 | [Updated]: 01.29.2015'
-  echo '================================================================'
+  echo '====================================================================='
+  echo ' BuildVPN.sh | [Version]: 1.9.0 | [Updated]: 02.09.2015'
+  echo '====================================================================='
 }
 
 # OpenVPN Install Function
@@ -24,15 +24,27 @@ func_install(){
   func_title
   echo '[*] Updating Package Lists'
   apt-get update
-  echo
+
+  # Install Packages Based on OS Distribution
   echo '[*] Installing Packages'
-  apt-get -y install openvpn openssl
+  if [ ${os_distro} == 'Debian' ]; then
+    apt-get -y install openvpn openssl
+  elif [ ${os_distro} == 'Ubuntu' ]; then
+    apt-get -y install openvpn openssl easy-rsa
+  else
+    func_title
+    echo
+    echo '[!] Error: BuildVPN.sh is only supported on Debian 5+ and Ubuntu 12+.'
+    echo
+    exit 1
+  fi
 }
 
 # Server Buildout Function
 func_build_server(){
   # Locate RSA Example Directory
-  easyrsa_fnd=$(find / -wholename "*/easy-rsa/2.0/*vars"|sed 's:/vars::'|head -n1)
+  echo '[*] Discovering easy-rsa Directory...'
+  easyrsa_fnd=$(find / -name vars|grep easy-rsa|head -n1|sed 's:/vars::')
 
   # RSA Validation
   if [[ ${easyrsa_fnd} == '' ]]; then
@@ -44,28 +56,32 @@ func_build_server(){
   fi
 
   # Get Server Configuration User Input
+  func_title
+  echo
   read -p 'Enter Server Hostname......................: ' host
   echo
   echo '+----------------------+'
   echo '| Available Interfaces |'
   echo '+----------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
+  for if in $(netstat -i|awk 'FNR >= 3 { print $1 }'); do
+    ifconfig ${if}|awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'
+  done
   echo
-  read -p 'Enter IP OpenVPN Server Will Bind To.......: ' vpnip
-  read -p 'Enter Subnet For VPN (ex: 192.168.100.0)...: ' vpnnet
-  read -p 'Enter Subnet Netmask (ex: 255.255.255.0)...: ' netmask
-  read -p 'Enter Preferred DNS Server (ex: 8.8.8.8)...: ' dns
-  read -p 'Enter Max Clients Threshold................: ' maxconn
-  read -p 'Increase Encryption Key Size (y/n).........: ' incbits
+  read -p 'Enter IP OpenVPN Server Will Bind To........: ' vpnip
+  read -p 'Enter Subnet For VPN (ex: 192.168.100.0)....: ' vpnnet
+  read -p 'Enter Subnet Netmask (ex: 255.255.255.0)....: ' netmask
+  read -p 'Enter Preferred DNS Server (ex: 8.8.8.8)....: ' dns
+  read -p 'Enter Max Client Connection Threshold.......: ' maxconn
+  read -p 'Increase Encryption Key Size (y/n)..........: ' incbits
 
   # Get User Increased Key Size
   if [[ ${incbits} == [yY] ]]; then
-    read -p 'Enter Encryption Key Size (ex: 2048).......: ' keysize
+    read -p 'Enter Encryption Key Size (ex: 2048)........: ' keysize
   fi
 
-  read -p 'Route All Traffic Through This VPN (y/n)...: ' routeall
-  read -p 'Allow Certificates With Same Subject (y/n).: ' unique
-  read -p 'Enter Interface For Masquerading...........: ' natif
+  read -p 'Route All Traffic Through This VPN (y/n)....: ' routeall
+  read -p 'Allow Certificates With Same Subject (y/n)..: ' unique
+  read -p 'Enter Interface For Masquerading (ex: eth0).: ' natif
 
   # Build Certificate Authority
   func_title
@@ -92,6 +108,7 @@ func_build_server(){
   echo '[*] Preparing Build Configurations'
   ./clean-all >> /dev/null
   echo '[*] Building Certificate Authority'
+  echo
   ./build-ca
   func_title
   echo
@@ -171,15 +188,17 @@ func_build_client(){
     mkdir ${ovpncrt_dir}
   fi
 
-  read -p 'Enter Username (No Spaces).....................: ' user
-  read -p 'Enter Name For Configuration File (No Spaces)..: ' confname
+  read -p 'Enter Username (No Spaces)......................: ' user
+  read -p 'Enter Name For Configuration File (No Spaces)...: ' confname
   echo
   echo '+------------------------+'
   echo '| Available IP Addresses |'
   echo '+------------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
+  for if in $(netstat -i|awk 'FNR >= 3 { print $1 }'); do
+    ifconfig ${if}|awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'
+  done
   echo
-  read -p 'Enter IP/Hostname OpenVPN Server Binds To......: ' vpnip
+  read -p 'Enter IP/Hostname OpenVPN Server Binds To.......: ' vpnip
 
   # Build Certificate
   func_title
@@ -226,6 +245,13 @@ func_build_client(){
   echo 'comp-lzo' >> ${user}/${confname}.ovpn
   echo 'verb 3' >> ${user}/${confname}.ovpn
   echo 'mute 20' >> ${user}/${confname}.ovpn
+  echo 'BuildVPN File Information' >> ${user}/README
+  echo >> ${user}/README
+  echo 'Certificate Authority Certificate.: ca.crt' >> ${user}/README
+  echo 'TLS-Auth Shared Secret Key........: ta.key' >> ${user}/README
+  echo "User Certificate..................: ${user}.crt" >> ${user}/README
+  echo "User Private Key..................: ${user}.key" >> ${user}/README
+  echo "User OpenVPN Profile Bundle.......: ${confname}.ovpn" >> ${user}/README
 
   # Build Client Tarball
   echo "[*] Creating ${user}-${confname}.tar Configuration Package In: ${ovpncrt_dir}"
@@ -248,13 +274,15 @@ func_build_tunnel(){
   echo '+----------------------+'
   echo '| Available Interfaces |'
   echo '+----------------------+'
-  for i in $(netstat -i | awk 'FNR >= 3 { print $1 }'); do ifconfig $i |awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'; done
+  for if in $(netstat -i|awk 'FNR >= 3 { print $1 }'); do
+    ifconfig ${if}|awk '/Link |inet /'|tr -s '[:space:]'|sed -e 's/ Link.*//g' -e ':a;N;$!ba;s/\n inet//g' -e 's/addr://g'|cut -d" " -f1,2|sed 's/ /\t/'
+  done
   echo
-  read -p 'Enter External IP The Tunnel Binds To......: ' etunip
-  read -p 'Enter External Port The Tunnel Binds To....: ' etunport
-  read -p 'Enter Internal IP The Tunnel Forwards To...: ' itunip
-  read -p 'Enter Internal Port The Tunnel Forwards To.: ' itunport
-  read -p 'Enter Protocol The Tunnel Will Use.........: ' tunproto
+  read -p 'Enter External IP The Tunnel Binds To.......: ' etunip
+  read -p 'Enter External Port The Tunnel Binds To.....: ' etunport
+  read -p 'Enter Internal IP The Tunnel Forwards To....: ' itunip
+  read -p 'Enter Internal Port The Tunnel Forwards To..: ' itunport
+  read -p 'Enter Protocol The Tunnel Will Use..........: ' tunproto
 
   # Reconfigure Current IPTables and Save Configuration to Startup
   echo
@@ -265,7 +293,7 @@ func_build_tunnel(){
   echo "exit 0" >> /etc/rc.local
 
   echo
-  read -p 'Do You Have Another Tunnel To Add? (y/n)...: ' moretun
+  read -p 'Do You Have Another Tunnel To Add? (y/n)....: ' moretun
 
   if [[ ${moretun} == [yY] ]]; then
     func_build_tunnel
@@ -285,14 +313,33 @@ if [ $(whoami) != 'root' ]; then
   exit 1
 fi
 
-# Check Debian
-if [[ ! ${debian_vers} -ge '5' ]]; then
+# Check OS Version
+if [ ${os_distro} == 'Debian' ]; then
+  debian_ver=$(cat /etc/debian_version|cut -d"." -f1)
+  if [[ ! ${debian_ver} -ge '5' ]]; then
+    func_title
+    echo
+    echo '[!] Error: BuildVPN.sh is only supported on Debian version 5+.'
+    echo
+    exit 1
+  fi
+elif [ ${os_distro} == 'Ubuntu' ]; then
+  ubuntu_ver=$(cat /etc/issue|head -n1|cut -d" " -f2|cut -d"." -f1)
+  if [[ ! ${ubuntu_ver} -ge '12' ]]; then
+    func_title
+    echo
+    echo '[!] Error: BuildVPN.sh is only supported on Ubuntu version 12+.'
+    echo
+    exit 1
+  fi
+else
   func_title
   echo
-  echo '[!] Error: BuildVPN.sh is only supported on Debian version 5+.'
+  echo '[!] Error: BuildVPN.sh is only supported on Debian 5+ and Ubuntu 12+.'
   echo
   exit 1
 fi
+
 
 # Select Function and Menu Statement
 func_title
