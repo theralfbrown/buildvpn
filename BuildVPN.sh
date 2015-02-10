@@ -108,7 +108,6 @@ func_build_server(){
   echo '[*] Preparing Build Configurations'
   ./clean-all >> /dev/null
   echo '[*] Building Certificate Authority'
-  echo
   ./build-ca
   func_title
   echo
