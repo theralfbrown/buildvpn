@@ -27,3 +27,4 @@ Usage
 Supported Operating Systems
 ---------------------------
 * Debian 5+
+* Ubuntu 12+
