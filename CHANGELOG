@@ -1,3 +1,11 @@
+[02/09/2015]
+     Released.: Version 1.9.0
+     Added....: Re-Added and Fixed Support for Ubuntu (Popular Demand)
+     Added....: User Certificate Bundles Now Contain README
+     Modified.: Updated Validation Checks
+     Modified.: Cleaned Up Code
+     Modified.: Cosmetics
+
 [01/29/2015]
      Released.: Version 1.8.0
      Added....: External-to-Internal Tunnel Option (Thanks Johnny-Nohandle)
